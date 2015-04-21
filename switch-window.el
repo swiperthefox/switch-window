@@ -128,7 +128,7 @@ from-current-window is not nil"
 
 (defun switch-window-display-number (win num)
   "Create an overlay to diplay in the WIN window with label NUM while choosing."
-  (let* ((label (swap-buffers-label num))
+  (let* ((label (switch-window-label num))
          (buffer (window-buffer win))
          (wp (window-point win))
          (ol (make-overlay wp wp buffer)))
