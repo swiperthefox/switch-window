@@ -127,32 +127,15 @@ from-current-window is not nil"
     (window-list nil nil (frame-first-window))))
 
 (defun switch-window-display-number (win num)
-  "prepare a temp buffer to diplay in the window while choosing"
-  (let* ((label (switch-window-label num))
-	 (buf (get-buffer-create
-	       (format " *%s: %s*" label (buffer-name (window-buffer win))))))
-    (with-current-buffer buf
-      (let* ((w (window-width win))
-	     (h (window-body-height win))
-	     (increased-lines (/ (float h) switch-window-increase))
-	     (scale (if (> increased-lines 1) switch-window-increase h))
-	     (lines-before (/ increased-lines 2))
-	     (margin-left (/ w h) ))
-	;; increase to maximum switch-window-increase
-	(when (fboundp 'text-scale-increase)
-	  (text-scale-increase scale))
-	;; make it so that the huge number appears centered
-	(dotimes (i lines-before) (insert "\n"))
-	(dotimes (i margin-left)  (insert " "))
-	;; insert the label, with a hack to support ancient emacs
-        (if (fboundp 'text-scale-increase)
-	    (insert label)
-	  (insert (propertize label 'face
-			      (list :height (* (* h switch-window-increase)
-					       (if (> w h) 2 1))))))))
-    (set-window-buffer win buf)
-    buf))
-
+  "Create an overlay to diplay in the WIN window with label NUM while choosing."
+  (let* ((label (swap-buffers-label num))
+         (buffer (window-buffer win))
+         (wp (window-point win))
+         (ol (make-overlay wp wp buffer)))
+    (overlay-put ol 'before-string (propertize label 'face (list :height 4.0 :foreground "red")))
+    (overlay-put ol 'window win)
+  ol))
+  
 (defun apply-to-window-index (action n message-format)
   "apply action to given window index, target is the place of the
    window in (switch-window-list)"
@@ -210,7 +193,7 @@ ask user for the window to select"
 	  (minibuffer-num nil)
 	  (original-cursor (default-value 'cursor-type))
 	  (eobps (switch-window-list-eobp))
-	  key buffers
+	  key overlays
 	  window-points
 	  dedicated-windows)
 
@@ -227,7 +210,7 @@ ask user for the window to select"
 		(set-window-dedicated-p win nil))
 	      (if (minibuffer-window-active-p win)
 		  (setq minibuffer-num num)
-		(push (switch-window-display-number win num) buffers))
+		(push (switch-window-display-number win num) overlays))
 	      (setq num (1+ num)))
 
 	    (while (not key)
@@ -257,7 +240,7 @@ ask user for the window to select"
 	;; restore original cursor
 	(setq-default cursor-type original-cursor)
 	;; get those huge numbers away
-	(mapc 'kill-buffer buffers)
+	(mapc 'delete-overlay overlays)
 	(set-window-configuration config)
 	(dolist (w window-points)
 	  (set-window-point (car w) (cdr w)))
