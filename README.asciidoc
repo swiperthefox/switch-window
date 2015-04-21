@@ -1,7 +1,6 @@
 = switch-window
 
-(A fork of http://github.com/dimitri/switch-window)
-
+(A fork of http://github.com/dimitri/switch-window )
 == Window switching, the visual way.
 
 Check out this http://tapoueh.org/emacs/switch-window.html[screenshot], then install the
